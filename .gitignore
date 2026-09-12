@@ -1,0 +1,76 @@
+# ==========================================
+# Environment & Secrets (DO NOT COMMIT)
+# ==========================================
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.secret
+
+# ==========================================
+# Python Virtual Environments
+# ==========================================
+venv/
+.venv/
+env/
+ENV/
+TinyCD/tinycd_env/
+*/tinycd_env/
+*env/
+
+# ==========================================
+# Python Bytecode & Cache Files
+# ==========================================
+__pycache__/
+core/__pycache__/
+TinyCD/__pycache__/
+TinyCD/Tiny_model_4_CD/__pycache__/
+TinyCD/Tiny_model_4_CD/dataset/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# Node / Frontend Dependencies & Builds
+# ==========================================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================
+# Temporary & Generated Report Artifacts
+# ==========================================
+temp_report_images/
+temp_t1_*
+temp_t2_*
+*.tmp
+*.temp
+
+# ==========================================
+# OS & IDE Junk Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo

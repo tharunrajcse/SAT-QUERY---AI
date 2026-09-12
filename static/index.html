@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoChange AI — Bi-Temporal Change Detection & Spatial Intelligence</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="logo-group">
+            <div class="logo-icon">🛰️</div>
+            <div>
+                <h1 class="logo-title">GeoChange AI</h1>
+                <p class="logo-subtitle">Bi-Temporal Geospatial Change Detection & AI Intelligence</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div class="api-key-container">
+                <span class="key-icon">🔑</span>
+                <input type="password" id="geminiApiKey" placeholder="Paste Gemini API Key..." title="Optional: Enter Gemini API key for live AI chat & synthesis">
+            </div>
+            <button id="btnSample" class="btn btn-secondary">
+                <span class="btn-icon">⚡</span> 1-Click Sample Demo
+            </button>
+            <button id="btnGeneratePdf" class="btn btn-accent" disabled>
+                <span class="btn-icon">📄</span> Generate Document (PDF)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="workspace-grid">
+        <!-- LEFT PANEL: Upload & Parameters -->
+        <section class="panel control-panel">
+            <h2 class="panel-title">1. Image Pair Upload</h2>
+
+            <!-- T1 Dropzone -->
+            <div class="upload-box" id="dropzoneT1">
+                <input type="file" id="fileT1" accept="image/*,.tif,.tiff" hidden>
+                <div class="upload-content">
+                    <span class="upload-icon">📸</span>
+                    <div class="upload-text">
+                        <strong>Upload T1 Image (Before)</strong>
+                        <p class="file-name" id="nameT1">GeoTIFF, PNG, JPG (e.g., 2023)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- T2 Dropzone -->
+            <div class="upload-box" id="dropzoneT2">
+                <input type="file" id="fileT2" accept="image/*,.tif,.tiff" hidden>
+                <div class="upload-content">
+                    <span class="upload-icon">📸</span>
+                    <div class="upload-text">
+                        <strong>Upload T2 Image (After)</strong>
+                        <p class="file-name" id="nameT2">GeoTIFF, PNG, JPG (e.g., 2026)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Metadata Inputs -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="t1Date">T1 Date</label>
+                    <input type="date" id="t1Date" value="2023-01-15">
+                </div>
+                <div class="form-group">
+                    <label for="t2Date">T2 Date</label>
+                    <input type="date" id="t2Date" value="2026-06-20">
+                </div>
+            </div>
+
+            <!-- Parameters Section -->
+            <h2 class="panel-title" style="margin-top: 15px;">2. Inference Parameters</h2>
+
+            <div class="form-group">
+                <div class="label-with-value">
+                    <label for="thresholdSlider">Detection Sensitivity Threshold</label>
+                    <span id="thresholdVal" class="badge">0.50</span>
+                </div>
+                <input type="range" id="thresholdSlider" min="0.10" max="0.90" step="0.05" value="0.50">
+            </div>
+
+            <!-- Collapsible Fallback Coordinates for Non-GeoTIFF -->
+            <details class="accordion">
+                <summary>Spatial Coordinates Fallback (Non-GeoTIFF)</summary>
+                <div class="form-row" style="margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="fallbackLat">Center Latitude</label>
+                        <input type="number" id="fallbackLat" step="0.0001" value="37.7749">
+                    </div>
+                    <div class="form-group">
+                        <label for="fallbackLon">Center Longitude</label>
+                        <input type="number" id="fallbackLon" step="0.0001" value="-122.4194">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fallbackRes">Pixel Resolution (meters/px)</label>
+                    <input type="number" id="fallbackRes" step="0.1" value="0.5">
+                </div>
+            </details>
+
+            <!-- Action Button -->
+            <button id="btnAnalyze" class="btn btn-primary btn-block">
+                <span class="btn-icon">🧠</span> Run Bi-Temporal Analysis
+            </button>
+        </section>
+
+        <!-- CENTER PANEL: Maps & Comparison Views -->
+        <section class="panel map-panel">
+            <div class="tab-header">
+                <button class="tab-btn active" data-tab="mapTab">🛰️ GIS Map & Polygons</button>
+                <button class="tab-btn" data-tab="sliderTab">🔀 Swipe Viewer (T1 vs T2)</button>
+                <button class="tab-btn" data-tab="maskTab">🔴 Change Mask & Contours</button>
+            </div>
+
+            <div class="tab-content">
+                <!-- Tab 1: Leaflet Interactive GIS Map -->
+                <div id="mapTab" class="tab-pane active">
+                    <div id="leafletMap" class="map-container"></div>
+                </div>
+
+                <!-- Tab 2: Side-by-Side Image Swipe Slider -->
+                <div id="sliderTab" class="tab-pane">
+                    <div class="swipe-container" id="swipeContainer">
+                        <img id="imgSwipeT1" src="" alt="T1 Image (Before)">
+                        <div class="swipe-after-wrap" id="swipeAfterWrap">
+                            <img id="imgSwipeT2" src="" alt="T2 Image (After)">
+                        </div>
+                        <div class="swipe-divider" id="swipeDivider">
+                            <div class="swipe-handle">◄ ►</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Binary Mask & Contour Map -->
+                <div id="maskTab" class="tab-pane">
+                    <div class="grid-2">
+                        <div class="image-card">
+                            <h4>TinyCD Binary Mask</h4>
+                            <img id="imgBinaryMask" class="view-img" src="" alt="Binary Change Mask">
+                        </div>
+                        <div class="image-card">
+                            <h4>Colorized Vector Overlay</h4>
+                            <img id="imgOverlay" class="view-img" src="" alt="Vector Overlay Map">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: KPI Metrics & Gemini Chat -->
+        <section class="panel metrics-panel">
+            <!-- KPI Cards Grid -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <span class="kpi-title">Total Covered Area</span>
+                    <span class="kpi-value" id="kpiTotalArea">-</span>
+                    <span class="kpi-unit" id="kpiTotalAreaHa">-</span>
+                </div>
+                <div class="kpi-card highlight-danger">
+                    <span class="kpi-title">Changed Area</span>
+                    <span class="kpi-value" id="kpiChangedArea">-</span>
+                    <span class="kpi-unit" id="kpiChangedAreaHa">-</span>
+                </div>
+                <div class="kpi-card highlight-warning">
+                    <span class="kpi-title">Percentage Affected</span>
+                    <span class="kpi-value" id="kpiPercent">-</span>
+                    <span class="kpi-unit" id="kpiPixels">-</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-title">Polygon Clusters</span>
+                    <span class="kpi-value" id="kpiClusters">-</span>
+                    <span class="kpi-unit">Distinct Polygons</span>
+                </div>
+            </div>
+
+            <!-- Tabs for Analysis Summary & Live Chat -->
+            <div class="side-tab-header">
+                <button class="side-tab-btn active" data-sidetab="summarySideTab">📋 Summary & Drivers</button>
+                <button class="side-tab-btn" data-sidetab="polygonsSideTab">📍 Top Polygons</button>
+                <button class="side-tab-btn" data-sidetab="chatSideTab">💬 Gemini AI Chat</button>
+            </div>
+
+            <div class="side-tab-content">
+                <!-- Summary Tab -->
+                <div id="summarySideTab" class="side-tab-pane active">
+                    <div class="info-block">
+                        <h4 class="info-heading">Executive Summary</h4>
+                        <p id="summaryExec" class="info-text">Upload images or run 1-Click Sample Demo to inspect bi-temporal spatial changes.</p>
+                    </div>
+
+                    <div class="info-block">
+                        <h4 class="info-heading">Probable Change Drivers</h4>
+                        <p id="summaryDrivers" class="info-text">Analysis awaiting pipeline execution.</p>
+                    </div>
+
+                    <div class="info-block">
+                        <h4 class="info-heading">Environmental Impact</h4>
+                        <p id="summaryImpact" class="info-text">Risk assessment awaiting pipeline execution.</p>
+                    </div>
+                </div>
+
+                <!-- Top Polygons Tab -->
+                <div id="polygonsSideTab" class="side-tab-pane">
+                    <div class="table-scroll">
+                        <table class="data-table" id="polygonTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Area (m²)</th>
+                                    <th>Centroid (Lat, Lon)</th>
+                                    <th>Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="polygonTableBody">
+                                <tr><td colspan="4" class="text-center">No analysis data loaded</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gemini AI Chat Tab -->
+                <div id="chatSideTab" class="side-tab-pane">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-msg bot-msg">
+                                <strong>Gemini Assistant:</strong><br>
+                                Hello! Once your bi-temporal analysis completes, ask me anything about the spatial change drivers, polygon coordinates, environmental risk, or report data!
+                            </div>
+                        </div>
+
+                        <!-- Chat Suggestions -->
+                        <div class="chat-chips">
+                            <button class="chip" onclick="sendQuickChip('Explain the top 3 affected polygon clusters')">Top Clusters</button>
+                            <button class="chip" onclick="sendQuickChip('What is the environmental risk level?')">Environmental Risk</button>
+                            <button class="chip" onclick="sendQuickChip('Suggest field inspection steps')">Inspection Steps</button>
+                        </div>
+
+                        <div class="chat-input-row">
+                            <input type="text" id="chatInput" placeholder="Ask Gemini about this change detection..." onkeypress="handleChatKeyPress(event)">
+                            <button id="btnSendChat" class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Overlay Spinner -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner-card">
+            <div class="spinner"></div>
+            <h3 id="spinnerText">Processing Bi-Temporal Pipeline...</h3>
+            <p>Running GeoTIFF alignment, TinyCD inference, and GeoPandas vectorization</p>
+        </div>
+    </div>
+
+    <!-- Leaflet.js JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Custom Application JS -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
